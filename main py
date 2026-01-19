@@ -1,0 +1,98 @@
+import os, json, time, random, requests
+from flask import Flask, render_template_string
+from threading import Thread
+from datetime import datetime
+
+PIKAMC = "play.pikamc.net"
+API_KEY = os.environ.get("OPENAI_API_KEY")
+BOT_NAME = os.environ.get("BOT_NAME", "AI_Bot")
+
+app = Flask(__name__)
+logs = []
+running = False
+memory = []
+goal = "Explore"
+
+def log(msg, typ="info"):
+    t = datetime.now().strftime("%H:%M:%S")
+    logs.append({"time": t, "message": msg, "type": typ})
+    print(f"[{t}] {msg}")
+    if len(logs) > 100: logs.pop(0)
+
+def ask_ai(sit):
+    if not API_KEY: return {"action": "wait", "reason": "No API"}
+    try:
+        r = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+            json={
+                "model": "gpt-3.5-turbo",
+                "messages": [{
+                    "role": "user", 
+                    "content": f"Bạn là {BOT_NAME} trên {PIKAMC}. Tình huống: {sit}. Mục tiêu: {goal}. Trả JSON: {{\"action\": \"...\", \"reason\": \"...\"}}"
+                }]
+            },
+            timeout=5
+        )
+        txt = r.json()["choices"][0]["message"]["content"]
+        if "{" in txt and "}" in txt:
+            start, end = txt.find("{"), txt.rfind("}")+1
+            return json.loads(txt[start:end])
+    except: pass
+    acts = [{"action": "explore", "reason": "Khám phá"}, {"action": "mine", "reason": "Đào khoáng"}]
+    return random.choice(acts)
+
+@app.route('/')
+def home():
+    return render_template_string('''
+    <html><head><title>{{name}}</title>
+    <style>body{background:#1a1a2e;color:white;font-family:Arial;padding:20px;}
+    .btn{background:#4CAF50;color:white;padding:10px;border:none;margin:5px;cursor:pointer;}
+    .log{background:black;color:#0f0;padding:10px;font-family:monospace;height:300px;overflow-y:scroll;}
+    </style></head>
+    <body><h1>🤖 {{name}}</h1>
+    <p>Server: {{server}}</p>
+    <button class="btn" onclick="fetch('/start')">▶ Start</button>
+    <button class="btn" onclick="fetch('/stop')">⏹ Stop</button>
+    <div class="log" id="logs">{% for l in logs %}[{{l.time}}] {{l.message}}<br>{% endfor %}</div>
+    <script>setInterval(()=>fetch('/get_logs').then(r=>r.text()).then(t=>document.getElementById('logs').innerHTML=t),2000);</script>
+    </body></html>
+    ''', name=BOT_NAME, server=PIKAMC, logs=logs[-15:])
+
+@app.route('/start')
+def start():
+    global running
+    if not running:
+        running = True
+        Thread(target=bot_loop).start()
+        log("Bot started", "success")
+    return "Started"
+
+@app.route('/stop')
+def stop():
+    global running
+    running = False
+    log("Bot stopped", "warning")
+    return "Stopped"
+
+@app.route('/get_logs')
+def get_logs():
+    return ''.join([f'[{l["time"]}] {l["message"]}<br>' for l in logs[-15:]])
+
+def bot_loop():
+    cycle = 0
+    log("AI loop started")
+    while running:
+        cycle += 1
+        sits = ["No items", "Found village", "Night coming", "Low health", "Exploring"]
+        sit = random.choice(sits)
+        action = ask_ai(sit)
+        log(f"Cycle {cycle}: {action['action']} - {action['reason']}", "info")
+        memory.append({"cycle": cycle, "action": action})
+        if len(memory) > 50: memory = memory[-30:]
+        time.sleep(30)
+
+if __name__ == "__main__":
+    print(f"🤖 {BOT_NAME} | Server: {PIKAMC}")
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port, debug=False)
