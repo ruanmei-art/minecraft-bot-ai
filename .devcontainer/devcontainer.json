@@ -1,0 +1,6 @@
+{
+    "name": "Minecraft AI Bot",
+    "image": "mcr.microsoft.com/devcontainers/python:3.11",
+    "forwardPorts": [8080],
+    "postCreateCommand": "pip install -r requirements.txt"
+}
