@@ -26,7 +26,7 @@ def ask_ai(sit):
             "https://api.openai.com/v1/chat/completions",
             headers={"Authorization": f"Bearer {API_KEY}"},
             json={
-                "model": "gpt-3.5-turbo",
+                "model": "gemini-1.5-flash",
                 "messages": [{
                     "role": "user", 
                     "content": f"Bạn là {BOT_NAME} trên {PIKAMC}. Tình huống: {sit}. Mục tiêu: {goal}. Trả JSON: {{\"action\": \"...\", \"reason\": \"...\"}}"
