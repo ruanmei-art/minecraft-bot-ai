@@ -3,8 +3,8 @@ from flask import Flask, render_template_string
 from threading import Thread
 from datetime import datetime
 
-PIKAMC = "bucket.pikamc.vn:25451"
-API_KEY = os.environ.get("AIzaSyCGoOEMBh6S7Z23JrutPCDDlli9Mqtzl2g")
+PIKAMC = "SEVE_PIKAMC_FOR_YOU"
+API_KEY = os.environ.get("API_OPENAI")
 BOT_NAME = os.environ.get("BOT_NAME", "AI_Bot")
 
 app = Flask(__name__)
