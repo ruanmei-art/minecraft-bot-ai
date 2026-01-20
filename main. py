@@ -3,7 +3,7 @@ from flask import Flask, render_template_string
 from threading import Thread
 from datetime import datetime
 
-PIKAMC = "SEVE_PIKAMC_FOR_YOU"
+PIKAMC = "SEVER_PIKAMC_FOR_YOU"
 API_KEY = os.environ.get("API_OPENAI")
 BOT_NAME = os.environ.get("BOT_NAME", "AI_Bot")
 
